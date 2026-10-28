@@ -43,7 +43,11 @@ runs:
 
         echo "bucket=${bucket}" >> "${GITHUB_OUTPUT}"
         echo "Using cache CPU feature bucket: ${bucket}"
+    # Save only from pushes to main. PR-scoped entries can be restored only by the
+    # same PR, but they count toward the 10 GB repo quota and evict main's entries
+    # (each Conan entry is ~1.3 GB), so PRs restore main's caches read-only.
     - name: Cache CCache Volumes
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: actions/cache/save@v4
       with:
         path: ~/.ccache
@@ -55,6 +59,7 @@ runs:
         # Key must match cache-restore/action.yaml exactly for exact-key hits.
         key: knowhere-${{ inputs.os }}-${{ github.job }}-${{ steps.cpu_feature.outputs.bucket }}-ccache-${{ hashFiles('src/**/*.cpp', 'src/**/*.cc', 'src/**/*.c', 'src/**/*.h', 'src/**/*.hpp', 'include/**/*.h', 'include/**/*.hpp', 'tests/**/*.cpp', 'tests/**/*.cc', 'tests/**/*.h', 'benchmark/**/*.cpp', 'benchmark/**/*.cc', 'benchmark/**/*.h', 'cmake/**', 'CMakeLists.txt', 'Makefile', 'conanfile.py') }}
     - name: Cache Conan Packages
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: actions/cache/save@v4
       with:
         path: ~/.conan2
